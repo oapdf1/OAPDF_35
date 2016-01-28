@@ -40,7 +40,7 @@ if (len(sys.argv)>1):
 		postcombine=False
 
 nowdir=os.path.basename(os.path.abspath(os.path.curdir))
-p=re.compile(r"<title>.*?</title>")
+ptitle=re.compile(r"<title>.*?</title>")
 pl=re.compile(r'(?<=<a href=\")http.*?(?=\">)')
 ph=re.compile(r"</head>")
 
@@ -240,7 +240,7 @@ for prefix in prefixdir:
 	if (not os.path.exists(outdir+prefix)): 
 		os.makedirs(outdir+prefix)
 	for pd in glob.iglob(prefix+"/*.pdf"):
-		try:
+		#try:
 			doi=pd.split(os.sep)[1][:-4]
 			doiat=doi.replace("/","@")
 			dois=doiat.split("@",1)
@@ -261,10 +261,19 @@ for prefix in prefixdir:
 			#may be wrong if origin doi has @
 			link="http://dx.doi.org/"+realdoi
 			r=requests.get(link,allow_redirects=False)
-			title=p.search(r.text).group().lower()
+			titlere=ptitle.search(r.text)
+			if titlere:
+				title=titlere.group().lower()
+			else:
+				title='<title>Handle redirect</title>'
 			reallink=""
 			if ("redirect" in title):
-				reallink=pl.search(r.text).group()
+				reallinkre=pl.search(r.text)
+				if (reallinkre):
+					reallink=reallinkre.group()
+				else:
+					r=requests.get(link,allow_redirects=True)
+					reallink=r.url
 				pdflink=userlink+nowdir+"/raw/master/"+prefix+"/"+doiat+".pdf"
 				#if (not os.path.exists(htmldir)): os.makedirs(htmldir)
 				if (not os.path.exists(pagedir)): os.makedirs(pagedir)
@@ -305,8 +314,11 @@ for prefix in prefixdir:
 					f=open(pd.split(os.sep)[1]+".error",'w');
 					f.write(pd)
 					f.close()
-		except:
-			pass
+		#except Exception as e:
+		#	print e, pd
+		#	pass
+
+raw_input("Any key to exit...")
 
 
 
